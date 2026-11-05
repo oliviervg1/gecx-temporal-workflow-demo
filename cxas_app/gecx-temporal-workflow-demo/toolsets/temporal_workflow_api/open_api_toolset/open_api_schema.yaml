@@ -1,0 +1,245 @@
+openapi: 3.0.3
+info:
+  title: Albion Bank Temporal.io Dispute Workflow Adapter
+  version: 1.0.0
+  description: >-
+    Stateless OpenAPI adapter connecting CX Agent Studio (GECX) Python
+    controller tools to the Temporal.io DisputeResolutionWorkflow via
+    Update-With-Start.
+servers:
+  - url: $env_var
+paths:
+  /v1/dispute-workflow/verify:
+    post:
+      operationId: verify_caller
+      summary: Verify caller card_last4 and 6-digit passcode before disclosing any active dispute state.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customer_id
+                - card_last4
+                - passcode
+              properties:
+                customer_id:
+                  type: string
+                  description: Unique Albion Bank customer identifier (default customer-claire-bristol).
+                card_last4:
+                  type: string
+                  description: Last 4 digits of the customer's Albion Bank debit card (for example 4821).
+                passcode:
+                  type: string
+                  description: Six-digit telephone banking security passcode spoken by the caller (for example 195501).
+      responses:
+        "200":
+          description: Verification outcome and active dispute case metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - customer_id
+                  - customer_name
+                  - has_active_case
+                  - active_case_ref
+                  - message
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - VERIFIED
+                      - INVALID_CREDENTIALS
+                      - ERROR
+                  customer_id:
+                    type: string
+                  customer_name:
+                    type: string
+                  has_active_case:
+                    type: boolean
+                  active_case_ref:
+                    type: string
+                  message:
+                    type: string
+  /v1/dispute-workflow/step:
+    post:
+      operationId: advance_dispute
+      summary: Advance, sync, or cancel the customer's Temporal DisputeResolutionWorkflow via Update-With-Start.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customer_id
+                - operation
+              properties:
+                customer_id:
+                  type: string
+                  description: Verified Albion Bank customer ID.
+                case_ref:
+                  type: string
+                  description: Dispute case reference used to key workflow_id (leave empty to resolve automatically).
+                conversation_ref:
+                  type: string
+                  description: CXAS session correlation identifier.
+                expected_step_id:
+                  type: string
+                  description: Step ID expected by the CXAS controller for optimistic concurrency.
+                operation:
+                  type: string
+                  enum:
+                    - sync
+                    - submit
+                    - cancel
+                  description: Generic workflow step operation ('sync', 'submit', or 'cancel').
+                option_index:
+                  type: integer
+                  description: 1-based index into the active step's numbered menu options.
+                confirmed:
+                  type: string
+                  enum:
+                    - ""
+                    - "yes"
+                    - "no"
+                  description: Caller confirmation token ('yes' or 'no') for confirmation steps.
+                input_text:
+                  type: string
+                  description: Free-text input value for open-ended workflow steps.
+                is_session_resume:
+                  type: boolean
+                  description: Whether this sync call is resuming an active workflow in a new CXAS session.
+      responses:
+        "200":
+          description: Structured domain state returned synchronously from Temporal @workflow.update.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - error_code
+                  - workflow_id
+                  - case_ref
+                  - workflow_status
+                  - step_id
+                  - step_seq
+                  - input_kind
+                  - update_id
+                  - context_summary
+                  - customer_guidance
+                  - reprompt_guidance
+                  - end_conversation
+                  - session_vars
+                  - options
+                  - selected_transaction
+                  - provisional_credit_gbp
+                  - card_hold_active
+                  - saga_compensated
+                  - outbound_receipt_sent
+                  - next_step_estimated_ms
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - SUCCESS
+                      - IN_PROGRESS
+                      - ERROR
+                  error_code:
+                    type: string
+                  workflow_id:
+                    type: string
+                  case_ref:
+                    type: string
+                  workflow_status:
+                    type: string
+                    enum:
+                      - SELECT_TRANSACTION
+                      - CONFIRM_CARD_REPLACEMENT
+                      - AWAITING_MERCHANT_REPRESENTMENT
+                      - RESOLVED_CREDITED
+                      - CANCELLED_COMPENSATED
+                      - ABANDONED_COMPENSATED
+                  step_id:
+                    type: string
+                  step_seq:
+                    type: integer
+                  input_kind:
+                    type: string
+                    enum:
+                      - NONE
+                      - OPTION_SELECT
+                      - CONFIRMATION
+                      - FREE_TEXT
+                  update_id:
+                    type: string
+                  context_summary:
+                    type: string
+                  customer_guidance:
+                    type: string
+                  reprompt_guidance:
+                    type: string
+                  end_conversation:
+                    type: boolean
+                  session_vars:
+                    type: object
+                    properties:
+                      workflow_status:
+                        type: string
+                      card_hold_active:
+                        type: boolean
+                      provisional_credit_gbp:
+                        type: string
+                  options:
+                    type: array
+                    items:
+                      type: string
+                  selected_transaction:
+                    type: object
+                    properties:
+                      tx_id:
+                        type: string
+                      merchant_name:
+                        type: string
+                      amount_gbp:
+                        type: number
+                      date:
+                        type: string
+                      category:
+                        type: string
+                      scheme_reason_code:
+                        type: string
+                      label:
+                        type: string
+                  provisional_credit_gbp:
+                    type: number
+                  card_hold_active:
+                    type: boolean
+                  saga_compensated:
+                    type: boolean
+                  outbound_receipt_sent:
+                    type: boolean
+                  next_step_estimated_ms:
+                    type: integer
+        "409":
+          description: Stale step submission rejected by @submit_step.validator.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        "422":
+          description: Invalid option_index, confirmed, or input_text value rejected by @submit_step.validator.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string

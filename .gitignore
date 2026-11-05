@@ -1,0 +1,33 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+
+# OS and editor artifacts
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Local environment overrides and scratch files
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+todo.md

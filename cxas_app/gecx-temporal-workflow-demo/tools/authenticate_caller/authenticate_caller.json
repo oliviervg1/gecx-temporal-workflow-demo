@@ -1,0 +1,10 @@
+{
+  "name": "authenticate_caller",
+  "pythonFunction": {
+    "name": "authenticate_caller",
+    "pythonCode": "tools/authenticate_caller/python_function/python_code.py",
+    "description": "Verify caller identity using debit card last 4 digits and 6-digit passcode.\n\nDo not speak a conversational pacing phrase before calling this tool; call\nit immediately so the caller hears only the post-tool response.\n\nArgs:\n    card_last4: Last 4 digits of the caller's Albion Bank debit card, such as \"4821\".\n    passcode: Six-digit telephone banking passcode spoken by the caller, such as \"195501\".\n\nReturns:\n    Dictionary with agent_action containing the next spoken response."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "authenticate_caller"
+}

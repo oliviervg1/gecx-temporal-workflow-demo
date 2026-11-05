@@ -1,0 +1,9 @@
+{
+  "toolsets": {
+    "temporal_workflow_api": {
+      "openApiToolset": {
+        "url": "https://gecx-temporal-adapter-placeholder.example.run.app"
+      }
+    }
+  }
+}

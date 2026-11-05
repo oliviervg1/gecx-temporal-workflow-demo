@@ -1,0 +1,7 @@
+# CXAS Linter Configuration
+app_dir: "cxas_app/gecx-temporal-workflow-demo"
+evals_dirs:
+  - "evals/goldens"
+
+ignore:
+  - "**/__pycache__/**"

@@ -1,0 +1,29 @@
+{
+  "displayName": "authentication_agent",
+  "description": "Root Identity & Verification (ID&V) agent for Albion Bank that verifies the caller's debit card last 4 digits and six-digit telephone banking passcode before routing to the dispute specialist.",
+  "instruction": "agents/authentication_agent/instruction.txt",
+  "tools": [
+    "authenticate_caller",
+    "end_session"
+  ],
+  "childAgents": [
+    "dispute_specialist_agent"
+  ],
+  "beforeAgentCallbacks": [],
+  "afterAgentCallbacks": [],
+  "beforeModelCallbacks": [
+    {
+      "pythonCode": "agents/authentication_agent/before_model_callbacks/guard_and_route/python_code.py",
+      "description": "Seeds conversation_ref, executes silent Part.from_agent_transfer when target_agent is staged, and prevents post-tool controller re-invocation loops."
+    }
+  ],
+  "afterModelCallbacks": [
+    {
+      "pythonCode": "agents/authentication_agent/after_model_callbacks/repair_and_transfer/python_code.py",
+      "description": "Passes model tool calls through unchanged and appends Part.from_end_session when call_complete is true."
+    }
+  ],
+  "beforeToolCallbacks": [],
+  "afterToolCallbacks": [],
+  "guardrails": []
+}

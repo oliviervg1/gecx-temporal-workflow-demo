@@ -1,0 +1,19 @@
+{
+  "name": "temporal_workflow_api",
+  "displayName": "temporal_workflow_api",
+  "openApiToolset": {
+    "openApiSchema": "toolsets/temporal_workflow_api/open_api_toolset/open_api_schema.yaml",
+    "apiAuthentication": {
+      "serviceAgentIdTokenAuthConfig": {}
+    },
+    "ignoreUnknownFields": true
+  },
+  "executionType": "SYNCHRONOUS",
+  "description": "OpenAPI toolset connecting CX Agent Studio (GECX) Python controller tools to the Temporal DisputeResolutionWorkflow HTTP Adapter (/v1/dispute-workflow/verify and /v1/dispute-workflow/step).",
+  "toolFakeConfig": {
+    "codeBlock": {
+      "pythonCode": "toolsets/temporal_workflow_api/tool_fake_config/code_block/python_code.py"
+    },
+    "enableFakeMode": true
+  }
+}

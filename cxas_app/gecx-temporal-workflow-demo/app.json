@@ -1,0 +1,70 @@
+{
+  "name": "gecx-temporal-workflow-demo",
+  "displayName": "gecx-temporal-workflow-demo",
+  "description": "CX Agent Studio (GECX) reference application demonstrating how a Two-Agent Handoff Topology (authentication_agent -> dispute_specialist_agent) drives a durable Temporal.io Card Chargeback & Dispute Workflow (DisputeResolutionWorkflow) via Update-With-Start, cross-session resume, and saga compensation.",
+  "rootAgent": "authentication_agent",
+  "audioProcessingConfig": {
+    "synthesizeSpeechConfigs": {
+      "en-GB": {
+        "voice": "en-GB-Chirp3-HD-Aoede",
+        "speakingRate": 1.0,
+        "instruction": "Friendly woman in her early 30s, warm mid-pitch voice, Northern British accent"
+      }
+    },
+    "bargeInConfig": {
+      "bargeInAwareness": true
+    },
+    "inactivityTimeout": "300s"
+  },
+  "loggingSettings": {
+    "cloudLoggingSettings": {
+      "enableCloudLogging": true
+    },
+    "conversationLoggingSettings": {
+      "retentionWindow": "31536000s"
+    }
+  },
+  "modelSettings": {
+    "model": "gemini-composite-v2",
+    "temperature": 1.0
+  },
+  "variableDeclarations": [
+    {
+      "name": "session_state",
+      "description": "Consolidated caller verification, routing, and Temporal workflow state object persisted across turns and agent transfers.",
+      "schema": {
+        "type": "OBJECT",
+        "required": [],
+        "default": {
+          "customer_id": "customer-claire-bristol",
+          "conversation_ref": "conv-default"
+        }
+      }
+    }
+  ],
+  "globalInstruction": "global_instruction.txt",
+  "languageSettings": {
+    "defaultLanguageCode": "en-GB",
+    "supportedLanguageCodes": [
+      "en-GB"
+    ]
+  },
+  "defaultChannelProfile": {
+    "personaProperty": {},
+    "channelType": "WEB_UI",
+    "webWidgetConfig": {}
+  },
+  "evaluationMetricsThresholds": {
+    "goldenEvaluationMetricsThresholds": {
+      "turnLevelMetricsThresholds": {
+        "semanticSimilaritySuccessThreshold": 3,
+        "overallToolInvocationCorrectnessThreshold": 1.0
+      },
+      "expectationLevelMetricsThresholds": {}
+    }
+  },
+  "timeZoneSettings": {
+    "timeZone": "Europe/London"
+  },
+  "toolExecutionMode": "SEQUENTIAL"
+}

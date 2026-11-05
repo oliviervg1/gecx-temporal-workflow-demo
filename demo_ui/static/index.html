@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Albion Bank · CX Agent Studio &amp; Temporal.io Durable Dispute Workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-canvas: #f7f6f2;
+      --bg-surface: #ffffff;
+      --bg-subtle: #faf9f6;
+      --ink-primary: #141413;
+      --ink-secondary: #575652;
+      --ink-muted: #85837d;
+      --border-hairline: #e5e3dc;
+      --accent-blue: #1a56db;
+      --status-green: #157347;
+      --status-amber: #b45309;
+      --status-red: #b91c1c;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Single-line flat editorial header */
+    .top-header {
+      height: 54px;
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .brand-wordmark {
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      color: var(--ink-primary);
+    }
+
+    .brand-sep {
+      color: var(--ink-muted);
+      font-weight: 400;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--ink-secondary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .customer-meta {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .btn-flat {
+      appearance: none;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      color: var(--ink-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 120ms ease, border-color 120ms ease;
+    }
+
+    .btn-flat:hover {
+      background-color: var(--bg-subtle);
+      border-color: #cfccc2;
+    }
+
+    .btn-flat-primary {
+      background-color: var(--ink-primary);
+      border-color: var(--ink-primary);
+      color: #ffffff;
+    }
+
+    .btn-flat-primary:hover {
+      background-color: #2b2b29;
+    }
+
+    /* 50% / 50% Unified Split-Screen Arena */
+    .split-arena {
+      flex: 1;
+      margin: 14px 24px 16px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: calc(100vh - 84px);
+      max-height: calc(100vh - 84px);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .arena-column {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .arena-column-left {
+      border-right: 1px solid var(--border-hairline);
+    }
+
+    /* Section Headers inside Columns */
+    .pane-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pane-eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      font-weight: 500;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .pane-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink-primary);
+    }
+
+    .status-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .status-text.active {
+      color: var(--accent-blue);
+    }
+
+    .status-text.settled {
+      color: var(--status-green);
+    }
+
+    .status-text.compensated {
+      color: var(--status-amber);
+    }
+
+    /* Left Column: Pure Prose Conversation Stream */
+    .conversation-stream {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .empty-conversation {
+      color: var(--ink-muted);
+      font-size: 13px;
+      padding: 12px 0;
+    }
+
+    .turn-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .turn-block:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .turn-speaker {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-secondary);
+    }
+
+    .turn-speaker.caller {
+      color: var(--ink-muted);
+    }
+
+    .turn-speaker.agent {
+      color: var(--ink-primary);
+    }
+
+    .turn-prose {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink-primary);
+      max-width: 68ch;
+    }
+
+    .turn-meta {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--ink-muted);
+      margin-top: 2px;
+    }
+
+    /* Suggested Quick-Turn Prompts Strip */
+    .prompts-strip {
+      padding: 12px 24px;
+      border-top: 1px solid var(--border-hairline);
+      background-color: var(--bg-subtle);
+    }
+
+    .prompts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .prompts-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-primary);
+    }
+
+    .prompts-hint {
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+    }
+
+    .prompts-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .prompt-chip {
+      appearance: none;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--ink-primary);
+      cursor: pointer;
+      transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+    }
+
+    .prompt-chip:hover:not(:disabled) {
+      border-color: var(--ink-secondary);
+    }
+
+    .prompt-chip.recommended {
+      background-color: var(--ink-primary);
+      border-color: var(--ink-primary);
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .prompt-chip.recommended:hover:not(:disabled) {
+      background-color: #2b2b29;
+      border-color: #2b2b29;
+    }
+
+    .prompt-chip.recommended-alt {
+      background-color: var(--bg-surface);
+      border-color: var(--ink-primary);
+      color: var(--ink-primary);
+      font-weight: 500;
+    }
+
+    .prompt-chip:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      background-color: var(--bg-subtle);
+      border-color: var(--border-hairline);
+      color: var(--ink-muted);
+    }
+
+    /* Composer Input Row */
+    .composer-row {
+      padding: 14px 24px;
+      border-top: 1px solid var(--border-hairline);
+      display: flex;
+      gap: 10px;
+    }
+
+    .composer-input {
+      flex: 1;
+      border: 1px solid var(--border-hairline);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--ink-primary);
+      background-color: var(--bg-surface);
+    }
+
+    .composer-input:focus {
+      outline: none;
+      border-color: var(--ink-primary);
+    }
+
+    /* Right Column: Interactive SVG Call-Flow & Workflow State Diagram */
+    .diagram-section {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .diagram-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .svg-diagram {
+      width: 100%;
+      height: 128px;
+      display: block;
+    }
+
+    .svg-node {
+      cursor: pointer;
+    }
+
+    .svg-node rect {
+      fill: var(--bg-surface);
+      stroke: var(--border-hairline);
+      stroke-width: 1.2;
+      transition: stroke 120ms ease, fill 120ms ease;
+    }
+
+    .svg-node:hover rect {
+      stroke: var(--ink-secondary);
+    }
+
+    .svg-node.selected rect {
+      stroke: var(--ink-primary);
+      stroke-width: 1.8;
+      fill: var(--bg-subtle);
+    }
+
+    .svg-node.active-step rect {
+      stroke: var(--accent-blue);
+      stroke-width: 1.6;
+    }
+
+    .svg-node.completed-step rect {
+      stroke: var(--status-green);
+    }
+
+    /* 3-Metric Monochrome Takeaway Strip (Hairline Divided, Zero Nested Boxes) */
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .metric-cell {
+      padding: 14px 20px;
+      border-right: 1px solid var(--border-hairline);
+    }
+
+    .metric-cell:last-child {
+      border-right: none;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--ink-primary);
+      word-break: break-word;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--ink-secondary);
+      margin-top: 2px;
+    }
+
+    /* Temporal Lifecycle Controls Bar */
+    .controls-strip {
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border-hairline);
+      background-color: var(--bg-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .controls-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Interactive Node Trace Drawer & Temporal Event History */
+    .inspector-body {
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow-y: auto;
+    }
+
+    .node-trace-section {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .section-heading-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .section-heading {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-secondary);
+    }
+
+    .trace-pre {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--ink-primary);
+      background-color: var(--bg-subtle);
+      border-top: 1px solid var(--border-hairline);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 10px 12px;
+      overflow-x: auto;
+      max-height: 165px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .history-section {
+      padding: 16px 24px;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .history-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-muted);
+      padding: 6px 8px 6px 0;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .history-table td {
+      padding: 7px 8px 7px 0;
+      border-bottom: 1px solid var(--border-hairline);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-primary);
+    }
+
+    .history-table td.muted {
+      color: var(--ink-muted);
+    }
+  </style>
+</head>
+<body>
+  <!-- Single-Line Flat Editorial Header -->
+  <header class="top-header">
+    <div class="brand-group">
+      <span class="brand-wordmark">Albion Bank</span>
+      <span class="brand-sep">/</span>
+      <span class="brand-subtitle">CX Agent Studio (GECX) &amp; Temporal.io Durable Dispute Workflow</span>
+    </div>
+    <div class="header-actions">
+      <span class="customer-meta" id="customer-header-meta">Claire Vance · Card ••4821 · Passcode 195501</span>
+      <button type="button" class="btn-flat" id="btn-new-session" title="Start a new CXAS session ID to simulate the customer calling back the next day">
+        New Session (Simulate Callback)
+      </button>
+      <button type="button" class="btn-flat" id="btn-reset-demo" title="Terminate/reset the Temporal workflow and start a fresh demo">
+        Reset Demo
+      </button>
+    </div>
+  </header>
+
+  <!-- 50% / 50% Unified Split-Screen Workspace -->
+  <main class="split-arena">
+    <!-- Left Column: CX Agent Studio Conversation -->
+    <section class="arena-column arena-column-left" aria-label="CX Agent Studio Conversation">
+      <div class="pane-header">
+        <div>
+          <span class="pane-eyebrow">CX Agent Studio (GECX) · Two-Agent Handoff</span>
+          <h2 class="pane-title">Dispute Specialist Conversation</h2>
+        </div>
+        <span class="status-text active" id="session-indicator">Session 1 · authentication_agent</span>
+      </div>
+
+      <div class="conversation-stream" id="conversation-stream" role="log" aria-live="polite">
+        <p class="empty-conversation" id="empty-conversation-msg">
+          Select a prompt below or type a message to verify Claire Vance (Card 4821, Passcode 195501) and start or resume the durable Temporal dispute workflow.
+        </p>
+      </div>
+
+      <div class="prompts-strip">
+        <div class="prompts-header">
+          <span class="prompts-label" id="prompts-stage-label">Guided Demo · Step 1 of 3 — Identify &amp; Verify</span>
+          <span class="prompts-hint" id="prompts-stage-hint">Click Step 1 to verify Claire Vance and start or resume DisputeResolutionWorkflow</span>
+        </div>
+        <div class="prompts-row">
+          <button type="button" class="prompt-chip" id="chip-reset-start" style="display: none;">
+            ↺ Reset &amp; Start Fresh Dispute
+          </button>
+          <button type="button" class="prompt-chip recommended" id="chip-step-1" data-prompt="Hello, I need to dispute a card transaction. My card ends in 4821 and my six-digit passcode is 195501.">
+            1. Verify ID&amp;V (Card 4821 · Passcode 195501)
+          </button>
+          <button type="button" class="prompt-chip" id="chip-step-2" data-prompt="Option 1 please, the £142.50 payment at Acme Electronics Ltd on 2 November." disabled>
+            2. Select Option 1 (£142.50 Acme Electronics)
+          </button>
+          <button type="button" class="prompt-chip" id="chip-step-3" data-prompt="Yes please, permanently block the card, order a replacement, and issue the provisional credit." disabled>
+            3. Confirm Card Block &amp; Credit (Scenario 1)
+          </button>
+          <button type="button" class="prompt-chip" id="chip-step-cancel" data-prompt="No thank you, please cancel the dispute and remove the temporary hold on my card." disabled>
+            4. Cancel &amp; Saga Hold Release (Scenario 3)
+          </button>
+        </div>
+      </div>
+
+      <form class="composer-row" id="chat-form">
+        <input
+          type="text"
+          id="chat-input"
+          class="composer-input"
+          placeholder="Speak or type to Albion Bank Dispute Support..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn-flat btn-flat-primary" id="btn-send">Send</button>
+      </form>
+    </section>
+
+    <!-- Right Column: Temporal.io Live Workflow & Interactive Call-Flow Inspector -->
+    <aside class="arena-column" aria-label="Temporal.io Workflow Execution Inspector">
+      <div class="pane-header">
+        <div>
+          <span class="pane-eyebrow">Temporal.io Durable Execution · Update-With-Start</span>
+          <h2 class="pane-title">DisputeResolutionWorkflow Inspector</h2>
+        </div>
+        <span class="status-text" id="workflow-exec-badge">NOT_STARTED</span>
+      </div>
+
+      <!-- Interactive 3-Node Call-Flow + 4-Step Workflow State SVG Diagram -->
+      <div class="diagram-section">
+        <div class="diagram-caption">
+          <span>Click any architecture node below to inspect live claims, CXAS state, or OpenAPI / Temporal payloads</span>
+          <span id="selected-node-label">Inspecting: Temporal API &amp; Engine</span>
+        </div>
+        <svg class="svg-diagram" viewBox="0 0 640 124" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#85837d" />
+            </marker>
+          </defs>
+
+          <!-- Row 1: 3-Node Architecture Call-Flow (Interactive Trace Selector) -->
+          <g class="svg-node" id="node-caller" data-node="caller" transform="translate(8, 6)">
+            <rect width="176" height="44" rx="4" />
+            <text x="12" y="18" font-size="10" fill="#85837d" font-family="Inter, sans-serif" font-weight="500">1. CALLER &amp; ID&amp;V CLAIMS</text>
+            <text x="12" y="34" font-size="11.5" fill="#141413" font-family="JetBrains Mono, monospace" font-weight="600" id="svg-caller-sub">Claire Vance ••4821</text>
+          </g>
+
+          <line x1="184" y1="28" x2="224" y2="28" stroke="#85837d" stroke-width="1.2" marker-end="url(#arrow)" />
+
+          <g class="svg-node" id="node-agent" data-node="agent" transform="translate(228, 6)">
+            <rect width="184" height="44" rx="4" />
+            <text x="12" y="18" font-size="10" fill="#85837d" font-family="Inter, sans-serif" font-weight="500">2. CXAS AGENT &amp; STATE</text>
+            <text x="12" y="34" font-size="11.5" fill="#141413" font-family="JetBrains Mono, monospace" font-weight="600" id="svg-agent-sub">authentication_agent</text>
+          </g>
+
+          <line x1="412" y1="28" x2="452" y2="28" stroke="#85837d" stroke-width="1.2" marker-end="url(#arrow)" />
+
+          <g class="svg-node selected" id="node-temporal" data-node="temporal" transform="translate(456, 6)">
+            <rect width="176" height="44" rx="4" />
+            <text x="12" y="18" font-size="10" fill="#85837d" font-family="Inter, sans-serif" font-weight="500">3. TEMPORAL ADAPTER &amp; WF</text>
+            <text x="12" y="34" font-size="11.5" fill="#141413" font-family="JetBrains Mono, monospace" font-weight="600" id="svg-temporal-sub">Update-With-Start</text>
+          </g>
+
+          <!-- Row 2: 4-Step Temporal Workflow State Pipeline -->
+          <g class="svg-node" id="step-node-1" transform="translate(8, 72)">
+            <rect width="142" height="42" rx="4" />
+            <text x="10" y="17" font-size="9.5" fill="#85837d" font-family="Inter, sans-serif">STEP 1</text>
+            <text x="10" y="32" font-size="11" fill="#141413" font-family="Inter, sans-serif" font-weight="600">Select Transaction</text>
+          </g>
+
+          <line x1="150" y1="93" x2="168" y2="93" stroke="#85837d" stroke-width="1.1" marker-end="url(#arrow)" />
+
+          <g class="svg-node" id="step-node-2" transform="translate(172, 72)">
+            <rect width="142" height="42" rx="4" />
+            <text x="10" y="17" font-size="9.5" fill="#85837d" font-family="Inter, sans-serif">STEP 2 (15M TIMER)</text>
+            <text x="10" y="32" font-size="11" fill="#141413" font-family="Inter, sans-serif" font-weight="600">Card Hold &amp; Confirm</text>
+          </g>
+
+          <line x1="314" y1="93" x2="332" y2="93" stroke="#85837d" stroke-width="1.1" marker-end="url(#arrow)" />
+
+          <g class="svg-node" id="step-node-3" transform="translate(336, 72)">
+            <rect width="142" height="42" rx="4" />
+            <text x="10" y="17" font-size="9.5" fill="#85837d" font-family="Inter, sans-serif">STEP 3 (7D WINDOW)</text>
+            <text x="10" y="32" font-size="11" fill="#141413" font-family="Inter, sans-serif" font-weight="600">Provisional Credit</text>
+          </g>
+
+          <line x1="478" y1="93" x2="496" y2="93" stroke="#85837d" stroke-width="1.1" marker-end="url(#arrow)" />
+
+          <g class="svg-node" id="step-node-4" transform="translate(500, 72)">
+            <rect width="132" height="42" rx="4" />
+            <text x="10" y="17" font-size="9.5" fill="#85837d" font-family="Inter, sans-serif">STEP 4 (OUTCOME)</text>
+            <text x="10" y="32" font-size="11" fill="#141413" font-family="Inter, sans-serif" font-weight="600" id="step-node-4-title">Settled / Rollback</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 3-Metric Monochrome Takeaway Strip -->
+      <div class="metrics-strip">
+        <div class="metric-cell">
+          <div class="metric-label">Workflow Status</div>
+          <div class="metric-value" id="metric-wf-status">NOT_STARTED</div>
+          <div class="metric-sub" id="metric-wf-id">dispute:customer-claire-bristol:DSP-2026-8841</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-label">Step Seq &amp; Token</div>
+          <div class="metric-value" id="metric-step-id">step_seq: 0</div>
+          <div class="metric-sub" id="metric-update-id">Awaiting first Update-With-Start</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-label">Credit &amp; Card Hold</div>
+          <div class="metric-value" id="metric-credit-hold">£0.00 · Hold Inactive</div>
+          <div class="metric-sub" id="metric-saga-sub">No saga compensation triggered</div>
+        </div>
+      </div>
+
+      <!-- Interactive Temporal Lifecycle Controls -->
+      <div class="controls-strip">
+        <span class="pane-eyebrow" style="margin: 0;">Temporal Signals</span>
+        <div class="controls-group">
+          <button type="button" class="btn-flat" id="btn-fast-forward" title="Send simulate_merchant_outcome Signal to fast-forward the 7-day merchant representment timer">
+            Fast-Forward Merchant Review (7d)
+          </button>
+          <button type="button" class="btn-flat" id="btn-abandon" title="Send caller_abandoned Signal to trigger automatic saga release of the temporary card hold">
+            Simulate Caller Hang-Up (Saga Rollback)
+          </button>
+        </div>
+      </div>
+
+      <!-- Node Technical Trace + Temporal Event History Table -->
+      <div class="inspector-body">
+        <div class="node-trace-section">
+          <div class="section-heading-row">
+            <span class="section-heading" id="trace-panel-title">Node 3 Trace · Temporal OpenAPI Adapter &amp; Live Query State</span>
+            <span class="customer-meta" id="trace-panel-sub">Click Caller, CXAS Agent, or Temporal node above to switch</span>
+          </div>
+          <pre class="trace-pre" id="node-trace-pre">{
+  "status": "Ready — click a guided prompt on the left to start or resume DisputeResolutionWorkflow."
+}</pre>
+        </div>
+
+        <div class="history-section">
+          <div class="section-heading-row">
+            <span class="section-heading">Temporal Server Event History</span>
+            <span class="customer-meta" id="history-count-label">0 events</span>
+          </div>
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Temporal Event Type</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <tr>
+                <td colspan="3" class="muted">No workflow execution events recorded yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const state = {
+      customerId: 'customer-claire-bristol',
+      sessionNumber: 1,
+      sessionId: 'sess-' + Math.random().toString(36).slice(2, 8),
+      isFirstTurn: true,
+      sessionAuthenticated: false,
+      selectedNode: 'temporal',
+      lastTurnData: null,
+      lastInspectData: null,
+    };
+
+    const streamEl = document.getElementById('conversation-stream');
+    const sessionIndicatorEl = document.getElementById('session-indicator');
+    const wfExecBadgeEl = document.getElementById('workflow-exec-badge');
+    const metricWfStatusEl = document.getElementById('metric-wf-status');
+    const metricWfIdEl = document.getElementById('metric-wf-id');
+    const metricStepIdEl = document.getElementById('metric-step-id');
+    const metricUpdateIdEl = document.getElementById('metric-update-id');
+    const metricCreditHoldEl = document.getElementById('metric-credit-hold');
+    const metricSagaSubEl = document.getElementById('metric-saga-sub');
+    const traceTitleEl = document.getElementById('trace-panel-title');
+    const tracePreEl = document.getElementById('node-trace-pre');
+    const selectedNodeLabelEl = document.getElementById('selected-node-label');
+    const historyCountEl = document.getElementById('history-count-label');
+    const historyTbodyEl = document.getElementById('history-tbody');
+    const promptsStageLabelEl = document.getElementById('prompts-stage-label');
+    const promptsStageHintEl = document.getElementById('prompts-stage-hint');
+    const chipResetStartEl = document.getElementById('chip-reset-start');
+    const chipStep1El = document.getElementById('chip-step-1');
+    const chipStep2El = document.getElementById('chip-step-2');
+    const chipStep3El = document.getElementById('chip-step-3');
+    const chipStepCancelEl = document.getElementById('chip-step-cancel');
+    const btnFastForwardEl = document.getElementById('btn-fast-forward');
+    const btnAbandonEl = document.getElementById('btn-abandon');
+
+    function updateGuidedPrompts(wfStatus) {
+      const chips = [chipResetStartEl, chipStep1El, chipStep2El, chipStep3El, chipStepCancelEl];
+      chips.forEach((c) => {
+        c.classList.remove('recommended', 'recommended-alt');
+      });
+      btnFastForwardEl.classList.remove('btn-flat-primary');
+      btnAbandonEl.classList.remove('btn-flat-primary');
+
+      const isTerminalOrWindow = (
+        wfStatus === 'AWAITING_MERCHANT_REPRESENTMENT' ||
+        wfStatus === 'RESOLVED_CREDITED' ||
+        wfStatus === 'CANCELLED_COMPENSATED' ||
+        wfStatus === 'ABANDONED_COMPENSATED'
+      );
+
+      if (wfStatus === 'NOT_STARTED') {
+        chipResetStartEl.style.display = 'none';
+        promptsStageLabelEl.textContent = 'Guided Demo · Step 1 of 3 — Identify & Verify';
+        promptsStageHintEl.textContent = 'Click Step 1 to verify Claire Vance and start DisputeResolutionWorkflow via Update-With-Start.';
+        chipStep1El.textContent = '1. Verify ID&V (Card 4821 · Passcode 195501)';
+        chipStep1El.disabled = false;
+        chipStep1El.classList.add('recommended');
+        chipStep2El.disabled = true;
+        chipStep3El.disabled = true;
+        chipStepCancelEl.disabled = true;
+      } else if (wfStatus === 'SELECT_TRANSACTION') {
+        chipResetStartEl.style.display = 'none';
+        if (!state.sessionAuthenticated) {
+          promptsStageLabelEl.textContent = 'Scenario 2 (Callback Resume) · Verify ID&V to Resume Step 1';
+          promptsStageHintEl.textContent = 'New CXAS session active. Click Step 1 to verify ID&V and resume transaction selection.';
+          chipStep1El.textContent = '1. Verify ID&V to Resume Case (Card 4821 · 195501)';
+          chipStep1El.disabled = false;
+          chipStep1El.classList.add('recommended');
+          chipStep2El.disabled = true;
+          chipStep3El.disabled = true;
+          chipStepCancelEl.disabled = true;
+        } else {
+          promptsStageLabelEl.textContent = 'Guided Demo · Step 2 of 3 — Select Disputed Transaction';
+          promptsStageHintEl.textContent = 'Click Step 2 to select the £142.50 Acme Electronics charge and place a temporary card hold.';
+          chipStep1El.textContent = '1. Verify ID&V (Completed)';
+          chipStep1El.disabled = true;
+          chipStep2El.disabled = false;
+          chipStep2El.classList.add('recommended');
+          chipStep3El.disabled = true;
+          chipStepCancelEl.disabled = false;
+          chipStepCancelEl.classList.add('recommended-alt');
+        }
+      } else if (wfStatus === 'CONFIRM_CARD_REPLACEMENT') {
+        chipResetStartEl.style.display = 'none';
+        btnAbandonEl.classList.add('btn-flat-primary');
+        if (!state.sessionAuthenticated) {
+          promptsStageLabelEl.textContent = 'Scenario 2 (Callback Resume) · Verify ID&V to Resume Step 2';
+          promptsStageHintEl.textContent = 'New CXAS session active while card hold is on. Click Step 1 to verify ID&V and resume confirmation.';
+          chipStep1El.textContent = '1. Verify ID&V to Resume Case (Card 4821 · 195501)';
+          chipStep1El.disabled = false;
+          chipStep1El.classList.add('recommended');
+          chipStep2El.disabled = true;
+          chipStep3El.disabled = true;
+          chipStepCancelEl.disabled = true;
+        } else {
+          promptsStageLabelEl.textContent = 'Guided Demo · Step 3 of 3 — Choose Scenario Outcome (Card Hold Active)';
+          promptsStageHintEl.textContent = 'Click Step 3 (Scenario 1: Credit + Card 8914), Step 4 (Scenario 3: Saga Hold Release), or New Session above.';
+          chipStep1El.textContent = '1. Verify ID&V (Completed)';
+          chipStep1El.disabled = true;
+          chipStep2El.disabled = true;
+          chipStep3El.disabled = false;
+          chipStep3El.classList.add('recommended');
+          chipStepCancelEl.disabled = false;
+          chipStepCancelEl.classList.add('recommended-alt');
+        }
+      } else if (isTerminalOrWindow) {
+        chipResetStartEl.style.display = 'inline-block';
+        chipResetStartEl.disabled = false;
+        chipResetStartEl.classList.add('recommended');
+        chipStep1El.textContent = '1. Simulate Callback Status Check (Verify ID&V)';
+        chipStep1El.disabled = false;
+        chipStep1El.classList.add('recommended-alt');
+        chipStep2El.disabled = true;
+        chipStep3El.disabled = true;
+        chipStepCancelEl.disabled = true;
+        if (wfStatus === 'AWAITING_MERCHANT_REPRESENTMENT') {
+          btnFastForwardEl.classList.add('btn-flat-primary');
+          promptsStageLabelEl.textContent = 'Call Complete · Case in 7-Day Merchant Window (Scenario 2 Ready)';
+          promptsStageHintEl.textContent = 'Click "Fast-Forward Merchant Review (7d)" on the right, click Step 1 for a callback check, or Reset to start fresh.';
+        } else {
+          promptsStageLabelEl.textContent = 'Dispute Workflow Completed · ' + (STATUS_LABELS[wfStatus] || wfStatus);
+          promptsStageHintEl.textContent = 'Click "Reset & Start Fresh Dispute" to run another scenario from Step 1, or click Step 1 for a callback summary.';
+        }
+      }
+    }
+
+    function appendTurn(speakerLabel, roleClass, proseText, metaLine) {
+      const emptyEl = document.getElementById('empty-conversation-msg');
+      if (emptyEl) emptyEl.remove();
+
+      const block = document.createElement('div');
+      block.className = 'turn-block';
+
+      const speaker = document.createElement('div');
+      speaker.className = 'turn-speaker ' + roleClass;
+      speaker.textContent = speakerLabel;
+      block.appendChild(speaker);
+
+      const prose = document.createElement('div');
+      prose.className = 'turn-prose';
+      prose.textContent = proseText;
+      block.appendChild(prose);
+
+      if (metaLine) {
+        const meta = document.createElement('div');
+        meta.className = 'turn-meta';
+        meta.textContent = metaLine;
+        block.appendChild(meta);
+      }
+
+      streamEl.appendChild(block);
+      streamEl.scrollTop = streamEl.scrollHeight;
+    }
+
+    function updateStepNodes(wfStatus) {
+      const ids = ['step-node-1', 'step-node-2', 'step-node-3', 'step-node-4'];
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        el.classList.remove('active-step', 'completed-step');
+      });
+      const step4Title = document.getElementById('step-node-4-title');
+      step4Title.textContent = 'Settled / Rollback';
+
+      if (wfStatus === 'SELECT_TRANSACTION') {
+        document.getElementById('step-node-1').classList.add('active-step');
+      } else if (wfStatus === 'CONFIRM_CARD_REPLACEMENT') {
+        document.getElementById('step-node-1').classList.add('completed-step');
+        document.getElementById('step-node-2').classList.add('active-step');
+      } else if (wfStatus === 'AWAITING_MERCHANT_REPRESENTMENT') {
+        document.getElementById('step-node-1').classList.add('completed-step');
+        document.getElementById('step-node-2').classList.add('completed-step');
+        document.getElementById('step-node-3').classList.add('active-step');
+      } else if (wfStatus === 'RESOLVED_CREDITED') {
+        ids.forEach((id) => document.getElementById(id).classList.add('completed-step'));
+        step4Title.textContent = 'Final Settled';
+      } else if (wfStatus === 'CANCELLED_COMPENSATED' || wfStatus === 'ABANDONED_COMPENSATED') {
+        document.getElementById('step-node-4').classList.add('active-step');
+        step4Title.textContent = 'Saga Compensated';
+      }
+    }
+
+    function renderNodeTrace() {
+      const turn = state.lastTurnData || {};
+      const inspect = state.lastInspectData || {};
+      const vars = turn.session_variables || {};
+
+      if (state.selectedNode === 'caller') {
+        selectedNodeLabelEl.textContent = 'Inspecting: 1. Caller & ID&V Claims';
+        traceTitleEl.textContent = 'Node 1 Trace · Caller Identity, Session Scope & ID&V Status';
+        tracePreEl.textContent = JSON.stringify(
+          {
+            customer_id: state.customerId,
+            customer_name: inspect.customer_name || vars.customer_name || 'Claire Vance',
+            card_last4: inspect.card_last4 || '4821',
+            session_id: state.sessionId,
+            session_number: state.sessionNumber,
+            authenticated: Boolean(vars.authenticated),
+            has_active_case_on_verify: vars.has_active_case || 'false',
+          },
+          null,
+          2
+        );
+      } else if (state.selectedNode === 'agent') {
+        selectedNodeLabelEl.textContent = 'Inspecting: 2. CXAS Agent & State';
+        traceTitleEl.textContent = 'Node 2 Trace · Per-Turn Agent Transitions, Tool Calls & Session State';
+        tracePreEl.textContent = JSON.stringify(
+          {
+            active_agent: turn.active_agent || 'authentication_agent',
+            agent_transitions: turn.agent_transitions || ['authentication_agent'],
+            tool_calls: turn.tool_calls || [],
+            session_variables: vars,
+          },
+          null,
+          2
+        );
+      } else {
+        selectedNodeLabelEl.textContent = 'Inspecting: 3. Temporal Adapter & Workflow';
+        traceTitleEl.textContent = 'Node 3 Trace · Temporal OpenAPI Payloads & Live @workflow.query State';
+        tracePreEl.textContent = JSON.stringify(
+          {
+            openapi_exchanges: turn.api_exchanges || [],
+            temporal_live_state: inspect.live_state || null,
+            side_effect_ledger: inspect.side_effect_ledger || {},
+          },
+          null,
+          2
+        );
+      }
+    }
+
+    const STATUS_LABELS = {
+      NOT_STARTED: 'Ready to Start',
+      SELECT_TRANSACTION: 'Select Transaction',
+      CONFIRM_CARD_REPLACEMENT: 'Card Hold Active',
+      AWAITING_MERCHANT_REPRESENTMENT: 'Awaiting 7d Review',
+      RESOLVED_CREDITED: 'Resolved · Credited',
+      CANCELLED_COMPENSATED: 'Cancelled · Rollback',
+      ABANDONED_COMPENSATED: 'Abandoned · Rollback',
+    };
+
+    function renderInspector(inspect) {
+      if (!inspect) return;
+      state.lastInspectData = inspect;
+      const execStatus = inspect.execution_status || 'NOT_STARTED';
+      const live = inspect.live_state || {};
+      const wfStatus = live.workflow_status || execStatus;
+      const humanStatus = STATUS_LABELS[wfStatus] || wfStatus;
+
+      const recentTurns = inspect.recent_turns || [];
+      if (recentTurns.length > 0 && document.getElementById('empty-conversation-msg')) {
+        recentTurns.forEach((t, idx) => {
+          appendTurn(`Caller · Turn ${idx + 1}`, 'caller', t.user_text, '');
+          const transitions = (t.agent_transitions || [t.active_agent || 'authentication_agent']).join(' → ');
+          const endTag = t.session_ended ? ' · Call completed' : '';
+          const metaLine = `${transitions} · ${t.latency_ms || 0} ms${endTag}`;
+          appendTurn('Albion Bank', 'agent', t.agent_text, metaLine);
+          state.lastTurnData = t;
+          const activeAgent = t.active_agent || 'authentication_agent';
+          state.sessionAuthenticated = Boolean(t.session_variables?.authenticated) && !t.session_ended;
+          sessionIndicatorEl.textContent = t.session_ended
+            ? `Call Completed · Ready for Callback`
+            : `Session ${state.sessionNumber} · ${activeAgent}`;
+          document.getElementById('svg-agent-sub').textContent = activeAgent;
+        });
+      }
+
+      wfExecBadgeEl.textContent = execStatus;
+      wfExecBadgeEl.className = 'status-text ' + (
+        execStatus === 'RUNNING' ? 'active' : (execStatus === 'COMPLETED' ? 'settled' : '')
+      );
+
+      metricWfStatusEl.textContent = humanStatus;
+      metricWfStatusEl.className = 'metric-value ' + (
+        wfStatus === 'RESOLVED_CREDITED' || wfStatus === 'AWAITING_MERCHANT_REPRESENTMENT'
+          ? 'settled'
+          : (wfStatus.includes('COMPENSATED') ? 'compensated' : '')
+      );
+      metricWfIdEl.textContent = inspect.workflow_id || 'dispute:customer-claire-bristol:DSP-2026-8841';
+
+      const stepSeq = live.step_seq || 0;
+      const stepId = live.step_id || 'not_started';
+      metricStepIdEl.textContent = `Step ${stepSeq} · ${humanStatus}`;
+      const currResp = live.current_response || {};
+      metricUpdateIdEl.textContent = currResp.update_id
+        ? `${stepId} · ${currResp.update_id}`
+        : `step_id: ${stepId}`;
+
+      const credit = Number(live.provisional_credit_gbp || 0).toFixed(2);
+      const holdActive = Boolean(live.card_hold_active);
+      metricCreditHoldEl.textContent = `£${credit} · ${holdActive ? 'Hold Active' : 'Hold Released'}`;
+      metricSagaSubEl.textContent = live.saga_compensated
+        ? 'Saga rollback released temporary card hold'
+        : (live.outbound_receipt_sent ? 'SMS/email receipt dispatched' : 'No saga rollback triggered');
+
+      document.getElementById('svg-temporal-sub').textContent = wfStatus === 'NOT_STARTED'
+        ? 'Update-With-Start'
+        : humanStatus;
+
+      updateStepNodes(wfStatus);
+      updateGuidedPrompts(wfStatus);
+      renderNodeTrace();
+
+      const events = inspect.history_events || [];
+      historyCountEl.textContent = `${inspect.total_history_events || events.length} total events`;
+      historyTbodyEl.innerHTML = '';
+      if (!events.length) {
+        historyTbodyEl.innerHTML = '<tr><td colspan="3" class="muted">No workflow execution events recorded yet.</td></tr>';
+        return;
+      }
+      events.forEach((ev) => {
+        const tr = document.createElement('tr');
+        const ts = ev.timestamp ? ev.timestamp.split('T')[1]?.replace('Z', '') || ev.timestamp : '';
+        const tdId = document.createElement('td');
+        tdId.textContent = `#${ev.event_id}`;
+        const tdType = document.createElement('td');
+        tdType.textContent = ev.event_type || '';
+        const tdTs = document.createElement('td');
+        tdTs.className = 'muted';
+        tdTs.textContent = ts;
+        tr.append(tdId, tdType, tdTs);
+        historyTbodyEl.appendChild(tr);
+      });
+    }
+
+    async function refreshInspect() {
+      const res = await fetch(`/api/workflow/inspect?customer_id=${encodeURIComponent(state.customerId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        renderInspector(data);
+      }
+    }
+
+    async function sendTurn(text) {
+      const turnSessionNum = state.sessionNumber;
+      appendTurn(`Caller · Session ${turnSessionNum}`, 'caller', text, '');
+      const btnSend = document.getElementById('btn-send');
+      btnSend.disabled = true;
+      try {
+        const res = await fetch('/api/session/turn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_id: state.customerId,
+            session_id: state.sessionId,
+            text: text,
+            is_first_turn: state.isFirstTurn,
+          }),
+        });
+        state.isFirstTurn = false;
+        const data = await res.json();
+        state.lastTurnData = data;
+        if (data.session_id) {
+          state.sessionId = data.session_id;
+        }
+
+        const transitions = (data.agent_transitions || [data.active_agent || 'authentication_agent']).join(' → ');
+        const activeAgent = data.active_agent || 'authentication_agent';
+        document.getElementById('svg-agent-sub').textContent = activeAgent;
+
+        const liveResp = data.workflow_inspect?.live_state?.current_response || {};
+        const updateToken = liveResp.update_id ? ` · ${liveResp.update_id}` : '';
+        const endedSuffix = data.session_ended ? ' · Call completed (session closed)' : '';
+        const metaLine = `${transitions} · ${data.latency_ms || 0} ms${updateToken}${endedSuffix}`;
+
+        appendTurn('Albion Bank', 'agent', data.agent_text || '(No response)', metaLine);
+
+        if (data.session_ended) {
+          // Automatically rotate to a fresh CXAS session ID so subsequent turns never hit a closed session.
+          state.sessionNumber += 1;
+          state.sessionId = 'sess-' + Math.random().toString(36).slice(2, 8);
+          state.isFirstTurn = true;
+          state.sessionAuthenticated = false;
+          sessionIndicatorEl.textContent = `Call Completed · Ready for Session ${state.sessionNumber} Callback`;
+        } else {
+          state.sessionAuthenticated = Boolean(data.session_variables?.authenticated);
+          sessionIndicatorEl.textContent = `Session ${state.sessionNumber} · ${activeAgent}`;
+        }
+
+        if (data.workflow_inspect) {
+          renderInspector(data.workflow_inspect);
+        } else {
+          renderNodeTrace();
+        }
+      } finally {
+        btnSend.disabled = false;
+      }
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      await sendTurn(text);
+    });
+
+    document.querySelectorAll('.prompt-chip[data-prompt]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (btn.disabled) return;
+        const prompt = btn.getAttribute('data-prompt');
+        if (prompt) await sendTurn(prompt);
+      });
+    });
+
+    chipResetStartEl.addEventListener('click', async () => {
+      chipResetStartEl.disabled = true;
+      const res = await fetch('/api/workflow/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: state.customerId }),
+      });
+      const data = await res.json();
+      state.sessionNumber = 1;
+      state.sessionId = 'sess-' + Math.random().toString(36).slice(2, 8);
+      state.isFirstTurn = true;
+      state.sessionAuthenticated = false;
+      state.lastTurnData = null;
+      streamEl.innerHTML = '';
+      sessionIndicatorEl.textContent = 'Session 1 · authentication_agent';
+      document.getElementById('svg-agent-sub').textContent = 'authentication_agent';
+      if (data.workflow_inspect) renderInspector(data.workflow_inspect);
+      const step1Prompt = chipStep1El.getAttribute('data-prompt');
+      if (step1Prompt) await sendTurn(step1Prompt);
+    });
+
+    document.querySelectorAll('.svg-node[data-node]').forEach((nodeEl) => {
+      nodeEl.addEventListener('click', () => {
+        document.querySelectorAll('.svg-node[data-node]').forEach((n) => n.classList.remove('selected'));
+        nodeEl.classList.add('selected');
+        state.selectedNode = nodeEl.getAttribute('data-node');
+        renderNodeTrace();
+      });
+    });
+
+    document.getElementById('btn-new-session').addEventListener('click', () => {
+      state.sessionNumber += 1;
+      state.sessionId = 'sess-' + Math.random().toString(36).slice(2, 8);
+      state.isFirstTurn = true;
+      state.sessionAuthenticated = false;
+      sessionIndicatorEl.textContent = `Session ${state.sessionNumber} · authentication_agent (New Callback)`;
+      document.getElementById('svg-agent-sub').textContent = 'authentication_agent';
+      appendTurn(
+        `System · Session ${state.sessionNumber} Started`,
+        'caller',
+        'Started a fresh CXAS session ID. Click Step 1 (Verify ID&V) to see authenticate_caller and assist_card_dispute automatically resume the running Temporal workflow from the previous session.',
+        `new session_id: ${state.sessionId}`
+      );
+      const wfStatus = state.lastInspectData?.live_state?.workflow_status
+        || state.lastInspectData?.execution_status
+        || 'NOT_STARTED';
+      updateGuidedPrompts(wfStatus);
+      renderNodeTrace();
+    });
+
+    document.getElementById('btn-fast-forward').addEventListener('click', async () => {
+      const res = await fetch('/api/workflow/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: state.customerId,
+          signal_name: 'simulate_merchant_outcome',
+          payload: 'MERCHANT_ACCEPTED_LIABILITY',
+        }),
+      });
+      const data = await res.json();
+      if (data.workflow_inspect) renderInspector(data.workflow_inspect);
+    });
+
+    document.getElementById('btn-abandon').addEventListener('click', async () => {
+      const res = await fetch('/api/workflow/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: state.customerId,
+          signal_name: 'caller_abandoned',
+          payload: 'CALLER_HUNG_UP_MID_CONFIRMATION',
+        }),
+      });
+      const data = await res.json();
+      if (data.workflow_inspect) renderInspector(data.workflow_inspect);
+    });
+
+    document.getElementById('btn-reset-demo').addEventListener('click', async () => {
+      const res = await fetch('/api/workflow/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: state.customerId }),
+      });
+      const data = await res.json();
+      state.sessionNumber = 1;
+      state.sessionId = 'sess-' + Math.random().toString(36).slice(2, 8);
+      state.isFirstTurn = true;
+      state.sessionAuthenticated = false;
+      state.lastTurnData = null;
+      streamEl.innerHTML = '<p class="empty-conversation" id="empty-conversation-msg">Workflow reset. Select Step 1 below to begin a fresh dispute journey.</p>';
+      sessionIndicatorEl.textContent = 'Session 1 · authentication_agent';
+      document.getElementById('svg-agent-sub').textContent = 'authentication_agent';
+      if (data.workflow_inspect) renderInspector(data.workflow_inspect);
+    });
+
+    refreshInspect();
+  </script>
+</body>
+</html>

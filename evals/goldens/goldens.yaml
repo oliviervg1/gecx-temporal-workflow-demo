@@ -1,0 +1,180 @@
+# Golden Evaluations for gecx-temporal-workflow-demo
+#
+# Run stateful golden evaluations with NAIVE method and FAKE toolset mode:
+#   uv run cxas run --app-name projects/<PROJECT_ID>/locations/eu/apps/<APP_ID> \
+#     --tags P0 --golden-run-method NAIVE
+
+common_session_parameters:
+  session_state:
+    customer_id: customer-claire-bristol
+
+conversations:
+  - conversation: "new_dispute_idv_handoff_to_provisional_credit"
+    tags:
+      - "P0"
+      - "temporal_workflow"
+      - "idv_handoff"
+      - "provisional_credit"
+    session_parameters:
+      session_state:
+        customer_id: "customer-claire-new"
+        authenticated: false
+        auth_attempts: 0
+    turns:
+      - user: "Hello, I need to dispute a card transaction. My card ends in 4821 and my six-digit passcode is 195501."
+        tool_calls:
+          - action: "authenticate_caller"
+            args:
+              card_last4: "4821"
+              passcode: "195501"
+          - action: "transfer_to_agent"
+            args:
+              agent: "dispute_specialist_agent"
+          - action: "assist_card_dispute"
+            args:
+              operation: "sync"
+        agent:
+          - "# silent"
+          - "I have opened dispute case DSP-2026-8841 for your card ending 4821. Which recent transaction would you like to dispute: 1 for £142.50 at Acme Electronics Ltd on 2 Nov 2026, or 2 for £29.99 at StreamFlix Digital on 1 Nov 2026?"
+
+      - user: "Option 1 please, the £142.50 payment at Acme Electronics Ltd."
+        tool_calls:
+          - action: "assist_card_dispute"
+            args:
+              operation: "submit"
+              option_index: 1
+        agent: "Your selected transaction (£142.50 at Acme Electronics Ltd on 2 Nov 2026) qualifies for an immediate £142.50 provisional credit under case DSP-2026-8841, and I have placed a temporary security hold on card ending 4821. Would you like me to permanently block that card, order a replacement card ending 8914 arriving in 3 to 5 UK working days, and submit the chargeback claim?"
+
+      - user: "Yes please, block the card, order the replacement, and issue the provisional credit."
+        tool_calls:
+          - action: "assist_card_dispute"
+            args:
+              operation: "submit"
+              confirmed: "yes"
+          - action: "end_session"
+            args:
+              reason: "CALL_COMPLETED"
+              session_escalated: false
+        agent: "I have applied £142.50 in provisional credit to your account, permanently blocked card ending 4821, and ordered your replacement card ending 8914 arriving in 3 to 5 UK working days. Dispute case DSP-2026-8841 is now in the 7-day Visa merchant representment window, and we have sent your confirmation receipt."
+
+  - conversation: "cross_session_resume_pending_confirmation"
+    tags:
+      - "P0"
+      - "temporal_workflow"
+      - "cross_session_resume"
+    session_parameters:
+      session_state:
+        customer_id: "customer-claire-resume"
+        authenticated: false
+        auth_attempts: 0
+    turns:
+      - user: "Hi, I got disconnected earlier while disputing my Acme Electronics payment. My card ends in 4821 and my passcode is 195501."
+        tool_calls:
+          - action: "authenticate_caller"
+            args:
+              card_last4: "4821"
+              passcode: "195501"
+          - action: "transfer_to_agent"
+            args:
+              agent: "dispute_specialist_agent"
+          - action: "assist_card_dispute"
+            args:
+              operation: "sync"
+        agent:
+          - "# silent"
+          - "Welcome back, Claire Vance. Resuming active dispute case DSP-2026-8841. Your selected transaction (£142.50 at Acme Electronics Ltd on 2 Nov 2026) qualifies for an immediate £142.50 provisional credit under case DSP-2026-8841, and I have placed a temporary security hold on card ending 4821. Would you like me to permanently block that card, order a replacement card ending 8914 arriving in 3 to 5 UK working days, and submit the chargeback claim?"
+
+      - user: "Yes please, go ahead and confirm the replacement card and provisional credit."
+        tool_calls:
+          - action: "assist_card_dispute"
+            args:
+              operation: "submit"
+              confirmed: "yes"
+          - action: "end_session"
+            args:
+              reason: "CALL_COMPLETED"
+              session_escalated: false
+        agent: "I have applied £142.50 in provisional credit to your account, permanently blocked card ending 4821, and ordered your replacement card ending 8914 arriving in 3 to 5 UK working days. Dispute case DSP-2026-8841 is now in the 7-day Visa merchant representment window, and we have sent your confirmation receipt."
+
+  - conversation: "caller_declines_card_replacement_saga_hold_release"
+    tags:
+      - "P0"
+      - "temporal_workflow"
+      - "saga_compensation"
+    session_parameters:
+      session_state:
+        customer_id: "customer-claire-decline"
+        authenticated: false
+        auth_attempts: 0
+    turns:
+      - user: "Hello, I am calling back about my dispute. My card ends in 4821 and my passcode is 195501."
+        tool_calls:
+          - action: "authenticate_caller"
+            args:
+              card_last4: "4821"
+              passcode: "195501"
+          - action: "transfer_to_agent"
+            args:
+              agent: "dispute_specialist_agent"
+          - action: "assist_card_dispute"
+            args:
+              operation: "sync"
+        agent:
+          - "# silent"
+          - "Welcome back, Claire Vance. Resuming active dispute case DSP-2026-8841. Your selected transaction (£142.50 at Acme Electronics Ltd on 2 Nov 2026) qualifies for an immediate £142.50 provisional credit under case DSP-2026-8841, and I have placed a temporary security hold on card ending 4821. Would you like me to permanently block that card, order a replacement card ending 8914 arriving in 3 to 5 UK working days, and submit the chargeback claim?"
+
+      - user: "No thank you, please cancel the dispute and remove the temporary hold on my card."
+        tool_calls:
+          - action: "assist_card_dispute"
+            args:
+              operation: "submit"
+              confirmed: "no"
+          - action: "end_session"
+            args:
+              reason: "CALL_COMPLETED"
+              session_escalated: false
+        agent: "I have cancelled dispute case DSP-2026-8841. Card ending 4821 remains active with any temporary hold removed."
+
+  - conversation: "stale_step_409_auto_resync_recovery"
+    tags:
+      - "P0"
+      - "temporal_workflow"
+      - "stale_step_resync"
+    session_parameters:
+      session_state:
+        customer_id: "customer-claire-stale"
+        customer_name: "Claire Vance"
+        authenticated: true
+        target_agent: "dispute_specialist_agent"
+        case_ref: "DSP-2026-8841"
+        expected_step_id: "select_transaction"
+        expected_input_kind: "OPTION_SELECT"
+        workflow_status: "SELECT_TRANSACTION"
+        pending_workflow_options:
+          - "£142.50 at Acme Electronics Ltd on 2 Nov 2026"
+          - "£29.99 at StreamFlix Digital on 1 Nov 2026"
+    turns:
+      - user: "Option 1 please, the £142.50 payment at Acme Electronics Ltd."
+        tool_calls:
+          - action: "transfer_to_agent"
+            args:
+              agent: "dispute_specialist_agent"
+          - action: "assist_card_dispute"
+            args:
+              operation: "submit"
+              option_index: 1
+        agent:
+          - "# silent"
+          - "Your selected transaction (£142.50 at Acme Electronics Ltd on 2 Nov 2026) qualifies for an immediate £142.50 provisional credit under case DSP-2026-8841, and I have placed a temporary security hold on card ending 4821. Would you like me to permanently block that card, order a replacement card ending 8914 arriving in 3 to 5 UK working days, and submit the chargeback claim?"
+
+      - user: "Yes please, go ahead and confirm the replacement card and provisional credit."
+        tool_calls:
+          - action: "assist_card_dispute"
+            args:
+              operation: "submit"
+              confirmed: "yes"
+          - action: "end_session"
+            args:
+              reason: "CALL_COMPLETED"
+              session_escalated: false
+        agent: "I have applied £142.50 in provisional credit to your account, permanently blocked card ending 4821, and ordered your replacement card ending 8914 arriving in 3 to 5 UK working days. Dispute case DSP-2026-8841 is now in the 7-day Visa merchant representment window, and we have sent your confirmation receipt."

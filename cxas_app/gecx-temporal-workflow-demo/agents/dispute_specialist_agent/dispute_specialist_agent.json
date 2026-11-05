@@ -1,0 +1,27 @@
+{
+  "displayName": "dispute_specialist_agent",
+  "description": "Albion Bank Card Dispute & Chargeback Specialist agent that drives the durable Temporal DisputeResolutionWorkflow via assist_card_dispute.",
+  "instruction": "agents/dispute_specialist_agent/instruction.txt",
+  "tools": [
+    "assist_card_dispute",
+    "end_session"
+  ],
+  "childAgents": [],
+  "beforeAgentCallbacks": [],
+  "afterAgentCallbacks": [],
+  "beforeModelCallbacks": [
+    {
+      "pythonCode": "agents/dispute_specialist_agent/before_model_callbacks/guard_and_route/python_code.py",
+      "description": "Guards specialist access behind authenticated == True, emits the 0.26s pre-tool filler and operation='sync' tool call on entry, and hides end_session and transfer_to_agent."
+    }
+  ],
+  "afterModelCallbacks": [
+    {
+      "pythonCode": "agents/dispute_specialist_agent/after_model_callbacks/repair_and_transfer/python_code.py",
+      "description": "Passes model tool calls through unchanged and appends Part.from_end_session when call_complete is true."
+    }
+  ],
+  "beforeToolCallbacks": [],
+  "afterToolCallbacks": [],
+  "guardrails": []
+}

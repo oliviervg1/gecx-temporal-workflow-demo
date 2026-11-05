@@ -1,0 +1,10 @@
+{
+  "gcp_project_id": "your-gcp-project-id",
+  "location": "eu",
+  "app_name": "gecx-temporal-workflow-demo",
+  "deployed_app_id": "",
+  "app_dir": "cxas_app/",
+  "model": "gemini-composite-v2",
+  "goldens_dir": "evals/goldens",
+  "simulations_dir": "evals/simulations"
+}

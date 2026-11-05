@@ -1,0 +1,207 @@
+# CX Agent Studio (GECX) Tool Evaluation Suite: Albion Bank Dispute Controllers
+# Executed via:
+#   uv run cxas test-tools --app-name projects/<PROJECT_ID>/locations/eu/apps/<APP_ID> \
+#     --test-file evals/tool_tests/controller_tool_tests.yaml
+
+tests:
+  - name: authenticate_caller_missing_slots_prompt
+    tool: authenticate_caller
+    args:
+      card_last4: ""
+      passcode: ""
+    variables:
+      session_state:
+        customer_id: "customer-claire-bristol"
+        authenticated: false
+        auth_attempts: 0
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "last four digits"
+      variables:
+        - path: $.session_state.authenticated
+          operator: equals
+          value: false
+
+  - name: authenticate_caller_verify_success
+    tool: authenticate_caller
+    args:
+      card_last4: "4821"
+      passcode: "195501"
+    variables:
+      session_state:
+        customer_id: "customer-claire-new"
+        authenticated: false
+        auth_attempts: 0
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "Claire Vance"
+      variables:
+        - path: $.session_state.authenticated
+          operator: equals
+          value: true
+        - path: $.session_state.target_agent
+          operator: equals
+          value: "dispute_specialist_agent"
+        - path: $.session_state.pending_dispute_init
+          operator: equals
+          value: true
+
+  - name: assist_card_dispute_sync_workflow
+    tool: assist_card_dispute
+    args:
+      operation: "sync"
+    variables:
+      session_state:
+        customer_id: "customer-claire-new"
+        authenticated: true
+        case_ref: ""
+        expected_step_id: ""
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "Acme Electronics Ltd"
+      variables:
+        - path: $.session_state.expected_step_id
+          operator: equals
+          value: "select_transaction"
+        - path: $.session_state.expected_input_kind
+          operator: equals
+          value: "OPTION_SELECT"
+        - path: $.session_state.workflow_status
+          operator: equals
+          value: "SELECT_TRANSACTION"
+
+  - name: assist_card_dispute_select_option_1
+    tool: assist_card_dispute
+    args:
+      operation: "submit"
+      option_index: 1
+    variables:
+      session_state:
+        customer_id: "customer-claire-new"
+        authenticated: true
+        case_ref: "DSP-2026-8841"
+        expected_step_id: "select_transaction"
+        expected_input_kind: "OPTION_SELECT"
+        workflow_status: "SELECT_TRANSACTION"
+        pending_workflow_options:
+          - "£142.50 at Acme Electronics Ltd on 2 Nov 2026"
+          - "£29.99 at StreamFlix Digital on 1 Nov 2026"
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "temporary security hold on card ending 4821"
+      variables:
+        - path: $.session_state.expected_step_id
+          operator: equals
+          value: "confirm_card_replacement"
+        - path: $.session_state.expected_input_kind
+          operator: equals
+          value: "CONFIRMATION"
+        - path: $.session_state.workflow_status
+          operator: equals
+          value: "CONFIRM_CARD_REPLACEMENT"
+
+  - name: assist_card_dispute_stale_step_409_auto_resync
+    tool: assist_card_dispute
+    args:
+      operation: "submit"
+      option_index: 1
+    variables:
+      session_state:
+        customer_id: "customer-claire-stale"
+        conversation_ref: "conv-tool-test"
+        authenticated: true
+        case_ref: "DSP-2026-8841"
+        expected_step_id: "stale_step_0"
+        expected_input_kind: "OPTION_SELECT"
+        workflow_status: "SELECT_TRANSACTION"
+        pending_workflow_options:
+          - "£142.50 at Acme Electronics Ltd on 2 Nov 2026"
+          - "£29.99 at StreamFlix Digital on 1 Nov 2026"
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "temporary security hold on card ending 4821"
+      variables:
+        - path: $.session_state.expected_step_id
+          operator: equals
+          value: "confirm_card_replacement"
+        - path: $.session_state.expected_input_kind
+          operator: equals
+          value: "CONFIRMATION"
+        - path: $.session_state.workflow_status
+          operator: equals
+          value: "CONFIRM_CARD_REPLACEMENT"
+
+  - name: assist_card_dispute_submit_confirmed_yes
+    tool: assist_card_dispute
+    args:
+      operation: "submit"
+      confirmed: "yes"
+    variables:
+      session_state:
+        customer_id: "customer-claire-resume"
+        conversation_ref: "conv-tool-test"
+        authenticated: true
+        case_ref: "DSP-2026-8841"
+        expected_step_id: "confirm_card_replacement"
+        expected_input_kind: "CONFIRMATION"
+        workflow_status: "CONFIRM_CARD_REPLACEMENT"
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "replacement card ending 8914"
+      variables:
+        - path: $.session_state.expected_step_id
+          operator: equals
+          value: "awaiting_merchant_representment"
+        - path: $.session_state.expected_input_kind
+          operator: equals
+          value: "NONE"
+        - path: $.session_state.workflow_status
+          operator: equals
+          value: "AWAITING_MERCHANT_REPRESENTMENT"
+        - path: $.session_state.call_complete
+          operator: equals
+          value: "true"
+
+  - name: assist_card_dispute_cancel_at_confirmation
+    tool: assist_card_dispute
+    args:
+      operation: "cancel"
+    variables:
+      session_state:
+        customer_id: "customer-claire-decline"
+        conversation_ref: "conv-tool-test"
+        authenticated: true
+        case_ref: "DSP-2026-8841"
+        expected_step_id: "confirm_card_replacement"
+        expected_input_kind: "CONFIRMATION"
+        workflow_status: "CONFIRM_CARD_REPLACEMENT"
+    expectations:
+      response:
+        - path: $.result.agent_action
+          operator: contains
+          value: "cancelled dispute case DSP-2026-8841"
+      variables:
+        - path: $.session_state.expected_step_id
+          operator: equals
+          value: "cancelled_compensated"
+        - path: $.session_state.expected_input_kind
+          operator: equals
+          value: "NONE"
+        - path: $.session_state.workflow_status
+          operator: equals
+          value: "CANCELLED_COMPENSATED"
+        - path: $.session_state.call_complete
+          operator: equals
+          value: "true"

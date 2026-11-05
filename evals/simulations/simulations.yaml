@@ -1,0 +1,73 @@
+# Simulation Evaluations for gecx-temporal-workflow-demo
+#
+# Run against the deployed app with tool fakes:
+#   uv run cxas evals report \
+#     --app-name projects/<PROJECT_ID>/locations/eu/apps/<APP_ID> \
+#     --simulation-dir evals/simulations/ \
+#     --use-tool-fakes
+
+common_session_parameters: {}
+
+common_expectations: []
+
+evals:
+  - name: "sim_new_card_dispute_provisional_credit"
+    tags:
+      - "P0"
+      - "temporal_workflow"
+      - "provisional_credit"
+    session_parameters:
+      session_state:
+        customer_id: "customer-claire-bristol"
+        authenticated: false
+        auth_attempts: 0
+    steps:
+      - goal: >
+          Verify your identity with card ending 4821 and passcode 195501, select option 1
+          (£142.50 at Acme Electronics Ltd on 2 Nov 2026), and confirm blocking your card,
+          ordering a replacement, and receiving provisional credit.
+        success_criteria: >
+          The agent verifies your identity via authenticate_caller, reads out the numbered
+          transactions from assist_card_dispute, places the temporary security hold on card
+          4821 when you choose option 1, and issues £142.50 provisional credit with replacement
+          card ending 8914 when you confirm with yes.
+        response_guide: >
+          1. Say: "Hello, I need to dispute a card transaction. My card ends in 4821 and my
+          six-digit passcode is 195501."
+          2. When asked which transaction to dispute, say: "Option 1, the £142.50 payment at
+          Acme Electronics Ltd."
+          3. When asked to confirm blocking the card and ordering a replacement, say: "Yes please,
+          go ahead."
+        max_turns: 5
+    expectations:
+      - "The agent calls authenticate_caller to verify the caller's card last 4 digits and 6-digit passcode."
+      - "The agent calls assist_card_dispute to present the numbered transactions and advance the dispute to provisional credit."
+
+  - name: "sim_cross_session_resume_and_confirm"
+    tags:
+      - "P0"
+      - "temporal_workflow"
+      - "cross_session_resume"
+    session_parameters:
+      session_state:
+        customer_id: "customer-claire-resume"
+        authenticated: false
+        auth_attempts: 0
+    steps:
+      - goal: >
+          Call back after getting disconnected, verify your identity with card ending 4821
+          and passcode 195501, and confirm your resumed dispute case for £142.50 at Acme
+          Electronics Ltd.
+        success_criteria: >
+          The agent verifies your identity, welcomes you back and resumes case DSP-2026-8841
+          at confirm_card_replacement with the temporary hold on card 4821 active, and issues
+          £142.50 provisional credit when you confirm.
+        response_guide: >
+          1. Say: "Hi, I got disconnected earlier while disputing my Acme Electronics payment.
+          My card ends in 4821 and my passcode is 195501."
+          2. After hearing the resumed case summary, say: "Yes please, confirm the card replacement
+          and provisional credit."
+        max_turns: 4
+    expectations:
+      - "The agent resumes the existing dispute case DSP-2026-8841 at the confirmation step without asking the caller to re-select the transaction."
+      - "The agent calls assist_card_dispute with operation submit and confirmed yes."

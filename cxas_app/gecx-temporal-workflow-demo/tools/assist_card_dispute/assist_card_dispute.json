@@ -1,0 +1,10 @@
+{
+  "name": "assist_card_dispute",
+  "pythonFunction": {
+    "name": "assist_card_dispute",
+    "pythonCode": "tools/assist_card_dispute/python_function/python_code.py",
+    "description": "Start, resume, or advance the customer's durable Temporal card dispute workflow.\n\nDo not speak a conversational pacing phrase before calling this tool; call\nit immediately so the caller hears only the post-tool response.\n\nArgs:\n    operation: Generic workflow step operation (\"\", \"sync\", \"submit\", or \"cancel\").\n    option_index: 1-based numbered option chosen by the caller (1 or 2),\n        or 0 when not selecting an option.\n    option_text: Option label or merchant name spoken by the caller when\n        selecting an option, such as \"Acme Electronics Ltd\" or \"StreamFlix Digital\".\n    confirmed: Caller confirmation token (\"\", \"yes\", or \"no\") when responding\n        to a yes/no confirmation step.\n    input_text: Free-text caller input when responding to an open-ended step.\n\nReturns:\n    Dictionary with agent_action containing the next spoken response."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "assist_card_dispute"
+}
